@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import os
+import colorsys
 def load_images(image_paths):
     #Loads all images from the list of paths
     pixels = []
@@ -31,6 +32,13 @@ def show_palette(colors):
     plt.imshow([colors])
     plt.show()
 
+def sort_palette_by_hue(colors):
+    # Convert to HSV
+    hsv_colors = [colorsys.rgb_to_hsv(r/255, g/255, b/255) for r,g,b in colors]
+    # Sort by HSV
+    sorted_colors = [color for _, color in sorted(zip(hsv_colors, colors))]
+    return np.array(sorted_colors)
+
 if __name__ == "__main__":
     #Get list of files inside Images folder
     folder_path = "ColourProcessor\\Images"
@@ -41,6 +49,7 @@ if __name__ == "__main__":
     num_colors = 32
     palette = extract_palette(file_names_full, num_colors=num_colors)
     print("Extracted Colors (RGB):")
+    palette = sort_palette_by_hue(palette)
     print(palette)
 
     #Display palette
