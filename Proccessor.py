@@ -39,6 +39,59 @@ def sort_palette_by_hue(colors):
     sorted_colors = [color for _, color in sorted(zip(hsv_colors, colors))]
     return np.array(sorted_colors)
 
+def save_palette_as_png(colors, filename="palette.png", swatch_size=50):
+    #Save the output palette
+    num_colors = len(colors)
+    palette_img = np.zeros((swatch_size, swatch_size * num_colors, 3), dtype=np.uint8)
+
+    for i, color in enumerate(colors):
+        palette_img[:, i*swatch_size:(i+1)*swatch_size, :] = color
+
+    img = Image.fromarray(palette_img)
+    img.save(filename)
+    print(f"Palette saved as {filename}")
+
+
+def show_palette_interactive(colors, swatch_size=50):
+    """
+    Display palette and allow user to click to disable colors.
+    Returns the filtered colors.
+    """
+    colors = np.array(colors)
+    enabled = [True] * len(colors)
+
+    fig, ax = plt.subplots(figsize=(len(colors), 2))
+    ax.set_xlim(0, len(colors))
+    ax.set_ylim(0, 1)
+    ax.axis('off')
+
+    bars = []
+    for i, c in enumerate(colors):
+        bar = ax.add_patch(plt.Rectangle((i, 0), 1, 1, color=c/255))
+        bars.append(bar)
+
+    def onclick(event):
+        x = int(event.xdata)
+        if 0 <= x < len(colors):
+            enabled[x] = not enabled[x]
+            bars[x].set_alpha(1.0 if enabled[x] else 0.2)
+            fig.canvas.draw()
+
+    def onkey(event):
+        if event.key == 's':  # Press 's' to save filtered palette
+            filtered = colors[enabled]
+            save_palette_as_png(filtered, filename="trimmed_palette.png")
+            plt.close()
+
+    fig.canvas.mpl_connect('button_press_event', onclick)
+    fig.canvas.mpl_connect('key_press_event', onkey)
+    plt.show()
+
+    return colors[enabled]
+
+
+
+
 if __name__ == "__main__":
     #Get list of files inside Images folder
     folder_path = "ColourProcessor\\Images"
@@ -48,9 +101,6 @@ if __name__ == "__main__":
     #Extract colours
     num_colors = 32
     palette = extract_palette(file_names_full, num_colors=num_colors)
-    print("Extracted Colors (RGB):")
     palette = sort_palette_by_hue(palette)
     print(palette)
-
-    #Display palette
-    show_palette(palette)
+    palette = show_palette_interactive(palette)
