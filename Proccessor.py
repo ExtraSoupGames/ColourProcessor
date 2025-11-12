@@ -17,6 +17,10 @@ def extract_palette(image_paths, num_colors=16, resize_factor=0.5):
     all_pixels = []
     for path in image_paths:
         img = Image.open(path).convert("RGB")
+
+        #Scale down for speed
+        if resize_factor < 1.0:
+            img = img.resize((int(img.width * resize_factor), int(img.height * resize_factor)),Image.Resampling.LANCZOS)
         all_pixels.append(np.array(img).reshape(-1,3))
     
     all_pixels = np.vstack(all_pixels)
@@ -52,11 +56,8 @@ def save_palette_as_png(colors, filename="palette.png", swatch_size=50):
     print(f"Palette saved as {filename}")
 
 
-def show_palette_interactive(colors, swatch_size=50):
-    """
-    Display palette and allow user to click to disable colors.
-    Returns the filtered colors.
-    """
+def show_palette_interactive(colors, folder_path, swatch_size=50):
+    #Display the palette and allow the user to trim unneeded colours
     colors = np.array(colors)
     enabled = [True] * len(colors)
 
@@ -80,7 +81,7 @@ def show_palette_interactive(colors, swatch_size=50):
     def onkey(event):
         if event.key == 's':  # Press 's' to save filtered palette
             filtered = colors[enabled]
-            save_palette_as_png(filtered, filename="trimmed_palette.png")
+            save_palette_as_png(filtered, filename=os.path.join(folder_path, "trimmed_palette.png"))
             plt.close()
 
     fig.canvas.mpl_connect('button_press_event', onclick)
@@ -99,8 +100,10 @@ if __name__ == "__main__":
     file_names_full = [os.path.join(folder_path, f) for f in file_names]
 
     #Extract colours
-    num_colors = 32
-    palette = extract_palette(file_names_full, num_colors=num_colors)
+    num_colors = 64
+    palette = extract_palette(file_names_full, num_colors=num_colors, resize_factor=0.1)
     palette = sort_palette_by_hue(palette)
     print(palette)
-    palette = show_palette_interactive(palette)
+    palette = show_palette_interactive(palette, folder_path)
+    #Save an extra time
+    save_palette_as_png(palette)
